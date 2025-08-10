@@ -397,7 +397,7 @@ async def search_flight_options(
         flights = await search_flights(
             origin=origin,
             destination=destination,
-            departure_date=departure_date,
+            date=departure_date,
             adults=adults,
             cabin_class=cabin_class
         )
