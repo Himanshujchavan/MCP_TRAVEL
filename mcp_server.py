@@ -1,12 +1,11 @@
 """
-MCP stdio server for AI Trip Planner
+MCP stdio server for Essential Travel Tools
 
-Exposes tools:
-- plan_trip
-- search_flights
-- search_hotels
+Exposes only 4 essential tools:
 - get_weather
-- search_places
+- discover_places  
+- find_restaurants
+- check_travel_requirements
 
 Run (from project root):
   python mcp_server.py
@@ -26,12 +25,11 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 load_dotenv("local.env", override=True)
 
-# Reuse existing services
-from services.ai_trip_planner import generate_itinerary
-from services.flights_api import search_flights as svc_search_flights
-from services.hotels_api import search_hotels as svc_search_hotels
-from services.weather_api import get_weather as svc_get_weather
+# Import only the 4 essential services
+from services.weather_api import get_forecast
 from services.places_api import search_places as svc_search_places
+from services.restaurants_api import search_restaurants as svc_search_restaurants
+from services.visa_api import check_visa_requirements, get_safety_advisories
 
 # MCP server primitives
 from mcp.server import Server
@@ -40,7 +38,7 @@ from mcp.server.stdio import stdio_server
 from core.http_client import close_client
 
 
-server = Server("ai-trip-planner")
+server = Server("essential-travel-assistant")
 
 
 def _json_content(payload: Any) -> list[TextContent]:
@@ -48,146 +46,103 @@ def _json_content(payload: Any) -> list[TextContent]:
 
 
 @server.tool(
-    name="plan_trip",
-    description="Generate an itinerary using flights/hotels/weather/places and user preferences.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "origin": {"type": "string"},
-            "destination": {"type": "string"},
-            "start_date": {"type": "string"},
-            "end_date": {"type": "string"},
-            "budget": {"type": "number"},
-            "travelers": {"type": "integer"},
-            "adults": {"type": "integer"},
-            "children": {"type": "integer"},
-            "senior_citizens": {"type": "integer"},
-            "accommodation_type": {"type": "string"},
-            "hotel_rating": {"type": "number"},
-            "preferred_airlines": {"type": "array", "items": {"type": "string"}},
-            "cabin_class": {"type": "string"},
-            "activities": {"type": "array", "items": {"type": "string"}},
-            "dietary_preferences": {"type": "array", "items": {"type": "string"}},
-            "transportation_mode": {"type": "string"},
-            "weather_preference": {"type": "string"},
-            "avoid_bad_weather": {"type": "boolean"},
-            "detail_level": {"type": "string"},
-            "max_itinerary_days": {"type": "integer"},
-            "language": {"type": "string"},
-        },
-        "required": ["origin", "destination", "start_date", "end_date"],
-        "additionalProperties": True,
-    },
-)
-async def tool_plan_trip(**kwargs: Dict[str, Any]):
-    result = await generate_itinerary(kwargs)
-    return _json_content(result)
-
-
-@server.tool(
-    name="search_flights",
-    description="Search flights for a given origin, destination, and date.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "origin": {"type": "string"},
-            "destination": {"type": "string"},
-            "date": {"type": "string"},
-            "adults": {"type": "integer", "default": 1},
-            "currency": {"type": "string", "default": "USD"},
-            "cabin_class": {"type": "string", "default": "economy"},
-            "preferred_airlines": {"type": "array", "items": {"type": "string"}},
-        },
-        "required": ["origin", "destination", "date"],
-    },
-)
-async def tool_search_flights(**kwargs: Dict[str, Any]):
-    flights = await svc_search_flights(
-        kwargs["origin"],
-        kwargs["destination"],
-        kwargs["date"],
-        adults=int(kwargs.get("adults", 1)),
-        currency=kwargs.get("currency", "USD"),
-        cabin_class=kwargs.get("cabin_class", "economy"),
-        preferred_airlines=kwargs.get("preferred_airlines"),
-    )
-    return _json_content(flights)
-
-
-@server.tool(
-    name="search_hotels",
-    description="Search hotels for a location and date range.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "location": {"type": "string"},
-            "check_in": {"type": "string"},
-            "check_out": {"type": "string"},
-            "adults": {"type": "integer", "default": 1},
-            "accommodation_type": {"type": "string"},
-            "min_rating": {"type": "number"},
-            "page_size": {"type": "integer", "default": 10},
-        },
-        "required": ["location", "check_in", "check_out"],
-    },
-)
-async def tool_search_hotels(**kwargs: Dict[str, Any]):
-    hotels = await svc_search_hotels(
-        kwargs["location"],
-        kwargs["check_in"],
-        kwargs["check_out"],
-        adults=int(kwargs.get("adults", 1)),
-        page_size=int(kwargs.get("page_size", 10)),
-        accommodation_type=kwargs.get("accommodation_type"),
-        min_rating=kwargs.get("min_rating"),
-    )
-    return _json_content(hotels)
-
-
-@server.tool(
     name="get_weather",
-    description="Get current weather for a city.",
+    description="Get detailed weather forecasts for travel destinations with travel-specific insights.",
     input_schema={
         "type": "object",
-        "properties": {"city": {"type": "string"}, "units": {"type": "string", "default": "metric"}},
-        "required": ["city"],
+        "properties": {
+            "location": {"type": "string", "description": "Location for weather forecast"},
+        },
+        "required": ["location"],
     },
 )
 async def tool_get_weather(**kwargs: Dict[str, Any]):
-    data = await svc_get_weather(kwargs["city"], units=kwargs.get("units", "metric"))
-    return _json_content(data)
+    forecast = await get_forecast(kwargs["location"])
+    return _json_content(forecast)
 
 
 @server.tool(
-    name="search_places",
-    description="Search places/attractions using a free-text query (e.g., 'museums in Rome').",
+    name="discover_places",
+    description="Discover places, attractions, and activities in a destination with ratings and details.",
     input_schema={
         "type": "object",
-        "properties": {"query": {"type": "string"}, "region": {"type": "string"}, "limit": {"type": "integer"}},
-        "required": ["query"],
+        "properties": {
+            "destination": {"type": "string", "description": "Travel destination"},
+            "category": {"type": "string", "description": "Category of places (attractions, museums, parks, etc.)"},
+        },
+        "required": ["destination"],
     },
 )
-async def tool_search_places(**kwargs: Dict[str, Any]):
-    results = await svc_search_places(kwargs["query"], region=kwargs.get("region"), limit=kwargs.get("limit", 10))
-    return _json_content(results)
+async def tool_discover_places(**kwargs: Dict[str, Any]):
+    places = await svc_search_places(
+        location=kwargs["destination"],
+        category=kwargs.get("category", "tourist_attraction")
+    )
+    return _json_content(places)
 
 
-async def amain():
-    # Run MCP server over stdio
-    try:
-        async with stdio_server() as (read, write):
-            await server.run(read, write)
-    finally:
-        # Close shared http client used by services
-        try:
-            await close_client()
-        except Exception:
-            pass
+@server.tool(
+    name="find_restaurants",
+    description="Find restaurant recommendations with cuisine types, dietary filters, and price ranges.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "location": {"type": "string", "description": "Location to search for restaurants"},
+            "cuisine_type": {"type": "string", "description": "Type of cuisine (italian, chinese, etc.)"},
+            "price_range": {"type": "string", "description": "Price range (budget, mid-range, upscale)"},
+        },
+        "required": ["location"],
+    },
+)
+async def tool_find_restaurants(**kwargs: Dict[str, Any]):
+    restaurants = await svc_search_restaurants(
+        location=kwargs["location"],
+        cuisine=kwargs.get("cuisine_type"),
+        price_range=kwargs.get("price_range")
+    )
+    return _json_content(restaurants)
 
 
-def main():
-    asyncio.run(amain())
+@server.tool(
+    name="check_travel_requirements",
+    description="Check visa requirements and travel safety advisories for international destinations.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "destination_country": {"type": "string", "description": "Destination country"},
+            "origin_country": {"type": "string", "description": "Origin/passport country"},
+        },
+        "required": ["destination_country", "origin_country"],
+    },
+)
+async def tool_check_travel_requirements(**kwargs: Dict[str, Any]):
+    # Get visa requirements
+    visa_info = await check_visa_requirements(
+        kwargs["origin_country"], 
+        kwargs["destination_country"]
+    )
+    
+    # Get safety information
+    safety_info = await get_safety_advisories(kwargs["destination_country"])
+    
+    result = {
+        "visa_requirements": visa_info,
+        "safety_advisories": safety_info
+    }
+    return _json_content(result)
+
+
+async def main():
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(
+            read_stream,
+            write_stream,
+            server.create_initialization_options()
+        )
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    finally:
+        asyncio.run(close_client())
