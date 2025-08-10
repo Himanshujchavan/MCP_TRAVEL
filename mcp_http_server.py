@@ -148,11 +148,6 @@ mcp = FastMCP("AI Travel Assistant")
 # --- Essential Tools Only ---
 
 @mcp.tool
-async def health_check() -> str:
-    """Check if the MCP server is running properly."""
-    return "✅ MCP Travel Assistant is running! Available tools: weather, places, restaurants, travel requirements."
-
-@mcp.tool
 async def get_weather(
     location: Annotated[str, Field(description="Location for weather forecast")],
 ) -> str:
