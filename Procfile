@@ -1,0 +1,1 @@
+web: python mcp_http_server.py

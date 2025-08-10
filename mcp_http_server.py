@@ -147,6 +147,12 @@ mcp = FastMCP(
 async def validate() -> str:
     return MY_NUMBER
 
+# --- Tool: health_check (for deployment monitoring) ---
+@mcp.tool
+async def health_check() -> str:
+    """Health check endpoint for deployment monitoring."""
+    return "🚀 AI Trip Planner MCP Server is healthy and ready!"
+
 
 
 # --- Travel Planning Tools ---
@@ -574,8 +580,9 @@ async def check_travel_requirements(
 
 # --- Run MCP Server ---
 async def main():
+    # Render uses PORT environment variable, fallback to MCP_HTTP_PORT, then 8086
+    port = int(os.getenv("PORT", os.getenv("MCP_HTTP_PORT", "8086")))
     host = os.getenv("MCP_HTTP_HOST", "0.0.0.0")
-    port = int(os.getenv("MCP_HTTP_PORT", "8086"))
     print(f"🚀 Starting MCP server on http://{host}:{port}")
     await mcp.run_async("streamable-http", host=host, port=port)
 

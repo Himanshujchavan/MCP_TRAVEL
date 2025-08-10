@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: ai-trip-planner-mcp
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python mcp_http_server.py
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /
+    envVars:
+      - key: AUTH_TOKEN
+        value: oAGVDZtqPIqnhSoyJiPrBTsfKeCN_gsUmrqZZRxeYwE
+      - key: MCP_BEARER_TOKEN
+        value: oAGVDZtqPIqnhSoyJiPrBTsfKeCN_gsUmrqZZRxeYwE
+      - key: MY_NUMBER
+        value: "1234567890"
+      - key: MCP_HTTP_HOST
+        value: "0.0.0.0"
+      - key: MCP_HTTP_PORT
+        value: "10000"
+      - key: SKYSCANNER_API_KEY
+        value: demo_key_replace_with_real
+      - key: BOOKING_API_KEY
+        value: demo_key_replace_with_real
+      - key: WEATHER_API_KEY
+        value: demo_key_replace_with_real
+      - key: GOOGLE_PLACES_API_KEY
+        value: demo_key_replace_with_real
