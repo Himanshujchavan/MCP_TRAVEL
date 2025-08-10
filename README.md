@@ -33,7 +33,7 @@ Create API route handlers that call this backend. Example (app/api/plan-trip/rou
 
 import { NextResponse } from 'next/server'
 
-const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8086'
 
 export async function POST(req: Request) {
 	const body = await req.json()
