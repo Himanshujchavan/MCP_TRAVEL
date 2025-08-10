@@ -142,7 +142,8 @@ class VisaDescription(BaseModel):
 
 
 # --- Initialize MCP ---
-mcp = FastMCP("AI Travel Assistant")
+mcp = FastMCP("AI Travel Assistant", 
+             description="Essential travel planning tools: weather, places, restaurants, and travel requirements.")
 
 
 # --- Essential Tools Only ---
@@ -152,7 +153,7 @@ async def health_check() -> str:
     """Check if the MCP server is running properly."""
     return "✅ MCP Travel Assistant is running! Available tools: weather, places, restaurants, travel requirements."
 
-@mcp.tool
+@mcp.tool(description=WeatherDescription.model_dump_json())
 async def get_weather(
     location: Annotated[str, Field(description="Location for weather forecast")],
 ) -> str:
@@ -209,7 +210,7 @@ async def get_weather(
     except Exception as e:
         raise McpError(ErrorData(code=INTERNAL_ERROR, message=f"Weather forecast failed: {str(e)}"))
 
-@mcp.tool
+@mcp.tool(description=PlacesDescription.model_dump_json())
 async def discover_places(
     destination: Annotated[str, Field(description="Travel destination")],
     category: Annotated[str | None, Field(description="Category of places (attractions, museums, parks, etc.)")] = None,
@@ -254,7 +255,7 @@ async def discover_places(
     except Exception as e:
         raise McpError(ErrorData(code=INTERNAL_ERROR, message=f"Places search failed: {str(e)}"))
 
-@mcp.tool
+@mcp.tool(description=RestaurantDescription.model_dump_json())
 async def find_restaurants(
     location: Annotated[str, Field(description="Location to search for restaurants")],
     cuisine_type: Annotated[str | None, Field(description="Type of cuisine (italian, chinese, etc.)")] = None,
@@ -309,7 +310,7 @@ async def find_restaurants(
     except Exception as e:
         raise McpError(ErrorData(code=INTERNAL_ERROR, message=f"Restaurant search failed: {str(e)}"))
 
-@mcp.tool
+@mcp.tool(description=VisaDescription.model_dump_json())
 async def check_travel_requirements(
     destination_country: Annotated[str, Field(description="Destination country")],
     origin_country: Annotated[str, Field(description="Origin/passport country")],
@@ -385,7 +386,7 @@ async def check_travel_requirements(
 
 # --- Initialize with auth ---
 auth_provider = SimpleBearerAuthProvider(TOKEN)
-# mcp.auth.set_provider(auth_provider)  # Comment out for now
+mcp.auth.set_provider(auth_provider)
 
 
 async def main():
