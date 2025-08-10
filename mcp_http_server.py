@@ -340,7 +340,7 @@ async def search_hotel_options(
     """Search for hotel accommodations with detailed information."""
     try:
         hotels = await search_hotels(
-            destination=destination,
+            location=destination,
             check_in=check_in,
             check_out=check_out,
             adults=adults,
